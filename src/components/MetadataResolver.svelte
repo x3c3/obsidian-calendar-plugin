@@ -11,6 +11,8 @@
     <slot metadata="{null}" />
   {:then resolvedMeta}
     <slot metadata="{resolvedMeta}" />
+  {:catch}
+    <slot metadata="{null}" />
   {/await}
 {:else}
   <slot metadata="{null}" />

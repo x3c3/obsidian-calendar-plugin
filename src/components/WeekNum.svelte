@@ -4,6 +4,7 @@
   import type { Moment } from "moment";
   import type { TFile } from "obsidian";
   import { type IGranularity, getDateUID } from "../periodic-notes";
+  import { onDestroy } from "svelte";
   import Dots from "./Dots.svelte";
   import type PeriodicNotesCache from "./fileStore";
   import MetadataResolver from "./MetadataResolver.svelte";
@@ -45,7 +46,7 @@
   let metadata: Promise<IDayMetadata[]> | null;
   $: startOfWeek = getStartOfWeek(days);
 
-  fileCache.store.subscribe(() => {
+  const unsubscribe = fileCache.store.subscribe(() => {
     file = fileCache.getFile(days[0], "week");
     metadata = fileCache.getEvaluatedMetadata(
       "week",
@@ -53,6 +54,7 @@
       getSourceSettings
     );
   });
+  onDestroy(unsubscribe);
 
   function handleHover(event: PointerEvent) {
     if (event.target) {

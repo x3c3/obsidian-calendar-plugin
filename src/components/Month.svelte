@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Moment } from "moment";
   import type { TFile } from "obsidian";
-  import { getContext } from "svelte";
+  import { getContext, onDestroy } from "svelte";
   import type { Writable } from "svelte/store";
   import {
     appHasMonthlyNotesPluginLoaded,
@@ -50,8 +50,12 @@
       getSourceSettings
     );
   }
-  fileCache.store.subscribe(getMetadata);
-  displayedMonth.subscribe(getMetadata);
+  const unsubFileCache = fileCache.store.subscribe(getMetadata);
+  const unsubDisplayedMonth = displayedMonth.subscribe(getMetadata);
+  onDestroy(() => {
+    unsubFileCache();
+    unsubDisplayedMonth();
+  });
 
   function handleHover(event: PointerEvent) {
     if (!appHasMonthlyNotesPluginLoaded()) {

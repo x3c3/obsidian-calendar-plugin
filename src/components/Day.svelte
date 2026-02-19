@@ -4,7 +4,7 @@
   import type { Moment } from "moment";
   import type { TFile } from "obsidian";
   import { type IGranularity, getDateUID } from "../periodic-notes";
-  import { getContext } from "svelte";
+  import { getContext, onDestroy } from "svelte";
   import type { Writable } from "svelte/store";
 
   import Dots from "./Dots.svelte";
@@ -52,10 +52,11 @@
 
   let metadata: Promise<IDayMetadata[]> | null;
 
-  fileCache.store.subscribe(() => {
+  const unsubscribe = fileCache.store.subscribe(() => {
     file = fileCache.getFile(date, "day");
     metadata = fileCache.getEvaluatedMetadata("day", date, getSourceSettings);
   });
+  onDestroy(unsubscribe);
 
   function handleClick(event: MouseEvent) {
     onClick?.("day", date, file, isMetaPressed(event));
