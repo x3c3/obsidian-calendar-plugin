@@ -1,11 +1,10 @@
 <script lang="ts">
-  export let color: string | undefined = undefined;
-  export let isFilled: boolean;
+  let { color = undefined, isFilled }: { color?: string; isFilled: boolean } =
+    $props();
 </script>
 
 <svg
   class="dot"
- 
   style="color:{color}"
   viewBox="0 0 6 6"
   xmlns="http://www.w3.org/2000/svg"

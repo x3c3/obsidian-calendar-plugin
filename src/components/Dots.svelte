@@ -4,11 +4,14 @@
 
   import Dot from "./Dot.svelte";
 
-  export let centered: boolean = true;
-  export let metadata: IDayMetadata[];
+  let {
+    centered = true,
+    metadata,
+  }: { centered?: boolean; metadata: IDayMetadata[] } = $props();
 
-  let sortedMeta: IDayMetadata[];
-  $: sortedMeta = metadata && metadata.sort((a, b) => a.order - b.order);
+  let sortedMeta = $derived(
+    metadata && [...metadata].sort((a, b) => a.order - b.order),
+  );
 </script>
 
 <div class="dot-container" class:centered>
@@ -16,7 +19,7 @@
     {#each sortedMeta as { color, display, dots = [] }}
       {#if display === "calendar-and-menu"}
         {#each dots.slice(0, MAX_DOTS) as dot}
-          <Dot {...dot} color="{color}" />
+          <Dot {...dot} color={color} />
         {/each}
       {/if}
     {/each}

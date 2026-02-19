@@ -3,7 +3,7 @@ import path from "node:path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [svelte({ emitCss: false })],
+  plugins: [svelte({ emitCss: false, compilerOptions: { runes: true } })],
   resolve: {
     alias: {
       src: path.resolve(__dirname, "src"),

@@ -1,5 +1,3 @@
-<svelte:options immutable />
-
 <script lang="ts">
   import type { Moment } from "moment";
   import type { TFile } from "obsidian";
@@ -11,47 +9,52 @@
   import type { IDayMetadata, ISourceSettings } from "./types";
   import { getStartOfWeek, isMetaPressed } from "./utils";
 
-  // Properties
-  export let weekNum: number;
-  export let days: Moment[];
-  export let getSourceSettings: (sourceId: string) => ISourceSettings;
+  let {
+    weekNum,
+    days,
+    getSourceSettings,
+    onHover,
+    onClick,
+    onContextMenu,
+    fileCache,
+    selectedId = null,
+  }: {
+    weekNum: number;
+    days: Moment[];
+    getSourceSettings: (sourceId: string) => ISourceSettings;
+    onHover: (
+      periodicity: IGranularity,
+      date: Moment,
+      file: TFile | null,
+      targetEl: EventTarget,
+      isMetaPressed: boolean,
+    ) => void;
+    onClick: (
+      granularity: IGranularity,
+      date: Moment,
+      existingFile: TFile | null,
+      inNewSplit: boolean,
+    ) => void;
+    onContextMenu: (
+      granularity: IGranularity,
+      date: Moment,
+      file: TFile | null,
+      event: MouseEvent,
+    ) => void;
+    fileCache: PeriodicNotesCache;
+    selectedId: string | null;
+  } = $props();
 
-  // Event handlers
-  export let onHover: (
-    periodicity: IGranularity,
-    date: Moment,
-    file: TFile | null,
-    targetEl: EventTarget,
-    isMetaPressed: boolean
-  ) => void;
-  export let onClick: (
-    granularity: IGranularity,
-    date: Moment,
-    existingFile: TFile | null,
-    inNewSplit: boolean
-  ) => void;
-  export let onContextMenu: (
-    granularity: IGranularity,
-    date: Moment,
-    file: TFile | null,
-    event: MouseEvent
-  ) => void;
-  export let fileCache: PeriodicNotesCache;
-
-  // Global state;
-  export let selectedId: string | null = null;
-
-  let file: TFile | null;
-  let startOfWeek: Moment;
-  let metadata: Promise<IDayMetadata[]> | null;
-  $: startOfWeek = getStartOfWeek(days);
+  let file: TFile | null = $state(null);
+  let metadata: Promise<IDayMetadata[]> | null = $state(null);
+  let startOfWeek = $derived(getStartOfWeek(days));
 
   const unsubscribe = fileCache.store.subscribe(() => {
     file = fileCache.getFile(days[0], "week");
     metadata = fileCache.getEvaluatedMetadata(
       "week",
       days[0],
-      getSourceSettings
+      getSourceSettings,
     );
   });
   onDestroy(unsubscribe);
@@ -64,25 +67,27 @@
 </script>
 
 <td>
-  <MetadataResolver metadata="{metadata}" let:metadata>
-    <div
-      role="button"
-      tabindex="0"
-      class="week-num"
-      class:active="{selectedId === getDateUID(days[0], 'week')}"
-      draggable="{true}"
-      on:click="{onClick &&
-        ((e) => onClick('week', startOfWeek, file, isMetaPressed(e)))}"
-      on:keydown="{onClick &&
-        ((e) => (e.key === 'Enter' || e.key === ' ') && onClick('week', startOfWeek, file, false))}"
-      on:contextmenu="{onContextMenu &&
-        ((e) => onContextMenu('week', days[0], file, e))}"
-      on:dragstart="{file ? (event) => fileCache.onDragStart(event, file!) : undefined}"
-      on:pointerenter="{handleHover}"
-    >
-      {weekNum}
-      <Dots metadata="{metadata ?? []}" />
-    </div>
+  <MetadataResolver {metadata}>
+    {#snippet children(metadata)}
+      <div
+        role="button"
+        tabindex="0"
+        class="week-num"
+        class:active={selectedId === getDateUID(days[0], 'week')}
+        draggable={true}
+        onclick={onClick &&
+          ((e) => onClick('week', startOfWeek, file, isMetaPressed(e)))}
+        onkeydown={onClick &&
+          ((e) => (e.key === 'Enter' || e.key === ' ') && onClick('week', startOfWeek, file, false))}
+        oncontextmenu={onContextMenu &&
+          ((e) => onContextMenu('week', days[0], file, e))}
+        ondragstart={file ? (event) => fileCache.onDragStart(event, file!) : undefined}
+        onpointerenter={handleHover}
+      >
+        {weekNum}
+        <Dots metadata={metadata ?? []} />
+      </div>
+    {/snippet}
   </MetadataResolver>
 </td>
 

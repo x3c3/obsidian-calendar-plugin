@@ -1,5 +1,3 @@
-<svelte:options immutable />
-
 <script lang="ts">
   import type { Moment } from "moment";
   import type { TFile } from "obsidian";
@@ -18,39 +16,46 @@
   } from "./types";
   import { isMetaPressed } from "./utils";
 
-  // Properties
-  export let date: Moment;
-  export let fileCache: PeriodicNotesCache;
-  export let getSourceSettings: (sourceId: string) => ISourceSettings;
+  let {
+    date,
+    fileCache,
+    getSourceSettings,
+    onHover,
+    onClick,
+    onContextMenu,
+    today,
+    selectedId = null,
+  }: {
+    date: Moment;
+    fileCache: PeriodicNotesCache;
+    getSourceSettings: (sourceId: string) => ISourceSettings;
+    onHover: (
+      periodicity: IGranularity,
+      date: Moment,
+      file: TFile | null,
+      targetEl: EventTarget,
+      isMetaPressed: boolean,
+    ) => void;
+    onClick: (
+      granularity: IGranularity,
+      date: Moment,
+      existingFile: TFile | null,
+      inNewSplit: boolean,
+    ) => void;
+    onContextMenu: (
+      granularity: IGranularity,
+      date: Moment,
+      file: TFile | null,
+      event: MouseEvent,
+    ) => void;
+    today: Moment;
+    selectedId: string | null;
+  } = $props();
 
-  let file: TFile | null;
-
-  export let onHover: (
-    periodicity: IGranularity,
-    date: Moment,
-    file: TFile | null,
-    targetEl: EventTarget,
-    isMetaPressed: boolean
-  ) => void;
-  export let onClick: (
-    granularity: IGranularity,
-    date: Moment,
-    existingFile: TFile | null,
-    inNewSplit: boolean
-  ) => void;
-  export let onContextMenu: (
-    granularity: IGranularity,
-    date: Moment,
-    file: TFile | null,
-    event: MouseEvent
-  ) => void;
-
-  // Global state
-  export let today: Moment;
-  export let selectedId: string | null = null;
   const displayedMonth = getContext<Writable<Moment>>(DISPLAYED_MONTH);
 
-  let metadata: Promise<IDayMetadata[]> | null;
+  let file: TFile | null = $state(null);
+  let metadata: Promise<IDayMetadata[]> | null = $state(null);
 
   const unsubscribe = fileCache.store.subscribe(() => {
     file = fileCache.getFile(date, "day");
@@ -88,23 +93,25 @@
 </script>
 
 <td>
-  <MetadataResolver metadata="{metadata}" let:metadata>
-    <div
-      class="day"
-      class:active="{selectedId === getDateUID(date, 'day')}"
-      class:adjacent-month="{!date.isSame($displayedMonth, 'month')}"
-      class:has-note="{!!file}"
-      class:today="{date.isSame(today, 'day')}"
-      draggable="{true}"
-      {...getAttributes(metadata ?? [])}
-      on:click="{handleClick}"
-      on:contextmenu="{handleContextmenu}"
-      on:pointerenter="{handleHover}"
-      on:dragstart="{file ? (event) => fileCache.onDragStart(event, file!) : undefined}"
-    >
-      {date.format("D")}
-      <Dots metadata="{metadata ?? []}" />
-    </div>
+  <MetadataResolver {metadata}>
+    {#snippet children(metadata)}
+      <div
+        class="day"
+        class:active={selectedId === getDateUID(date, 'day')}
+        class:adjacent-month={!date.isSame($displayedMonth, 'month')}
+        class:has-note={!!file}
+        class:today={date.isSame(today, 'day')}
+        draggable={true}
+        {...getAttributes(metadata ?? [])}
+        onclick={handleClick}
+        oncontextmenu={handleContextmenu}
+        onpointerenter={handleHover}
+        ondragstart={file ? (event) => fileCache.onDragStart(event, file!) : undefined}
+      >
+        {date.format("D")}
+        <Dots metadata={metadata ?? []} />
+      </div>
+    {/snippet}
   </MetadataResolver>
 </td>
 
