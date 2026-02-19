@@ -7,16 +7,17 @@ on:
     branches: [master]
 
 jobs:
-  lint-and-test:
+  check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Install modules
-        run: yarn
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-      - name: Lint
-        run: yarn run lint
+      - name: Install dependencies
+        run: bun install
 
-      - name: Run tests
-        run: yarn run test
+      - name: Check
+        run: bun run check

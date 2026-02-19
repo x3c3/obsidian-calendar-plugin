@@ -1,13 +1,13 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
-
-  "include": ["src/**/*"],
-  "exclude": ["node_modules/*"],
+  "include": ["src/**/*", "version-bump.ts"],
   "compilerOptions": {
-    "types": ["node", "svelte", "jest"],
+    "lib": ["ES2022", "DOM"],
+    "types": ["svelte", "node"],
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "src": ["src/*"]
+      "src/*": ["src/*"]
     }
   }
 }
