@@ -19,16 +19,13 @@ export type IHTMLAttributes = Record<string, string | number | boolean>;
 
 export interface IEvaluatedMetadata {
   value: number | string;
-  goal?: number;
   dots: IDot[];
   attrs?: IHTMLAttributes;
 }
 
-export type ISourceDisplayOption = "calendar-and-menu" | "menu" | "none";
-
 export interface ISourceSettings {
   color: string;
-  display: ISourceDisplayOption;
+  display: "calendar-and-menu" | "menu" | "none";
   order: number;
 }
 
@@ -62,7 +59,6 @@ export interface IEventHandlers {
 export interface ICalendarSource {
   id: string;
   name: string;
-  description?: string;
 
   getMetadata?: (
     granularity: IGranularity,
@@ -71,9 +67,4 @@ export interface ICalendarSource {
   ) => Promise<IEvaluatedMetadata>;
 
   defaultSettings: Record<string, string | number>;
-  registerSettings?: (
-    containerEl: HTMLElement,
-    settings: ISourceSettings,
-    saveSettings: (settings: Partial<ISourceSettings>) => void,
-  ) => void;
 }

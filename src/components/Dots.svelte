@@ -1,12 +1,11 @@
 <script lang="ts">
+  import { MAX_DOTS } from "src/constants";
   import type { IDayMetadata } from "./types";
 
   import Dot from "./Dot.svelte";
 
   export let centered: boolean = true;
   export let metadata: IDayMetadata[];
-
-  const MAX_DOTS_PER_SOURCE = 5;
 
   let sortedMeta: IDayMetadata[];
   $: sortedMeta = metadata && metadata.sort((a, b) => a.order - b.order);
@@ -16,7 +15,7 @@
   {#if metadata}
     {#each sortedMeta as { color, display, dots = [] }}
       {#if display === "calendar-and-menu"}
-        {#each dots.slice(0, MAX_DOTS_PER_SOURCE) as dot}
+        {#each dots.slice(0, MAX_DOTS) as dot}
           <Dot {...dot} color="{color}" />
         {/each}
       {/if}

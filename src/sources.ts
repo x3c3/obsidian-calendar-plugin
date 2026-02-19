@@ -1,5 +1,5 @@
 import type { TFile } from "obsidian";
-import { DEFAULT_WORDS_PER_DOT } from "src/constants";
+import { DEFAULT_WORDS_PER_DOT, MAX_DOTS } from "src/constants";
 import { get } from "svelte/store";
 import type {
   ICalendarSource,
@@ -8,8 +8,6 @@ import type {
 } from "./components/types";
 
 import { settings } from "./stores";
-
-const NUM_MAX_DOTS = 5;
 
 function clamp(num: number, lowerBound: number, upperBound: number): number {
   return Math.min(Math.max(lowerBound, num), upperBound);
@@ -41,7 +39,7 @@ async function getWordLengthAsDots(note: TFile): Promise<number> {
 
   const wordCount = getWordCount(fileContents);
   const numDots = wordCount / wordsPerDot;
-  return clamp(Math.floor(numDots), 1, NUM_MAX_DOTS);
+  return clamp(Math.floor(numDots), 1, MAX_DOTS);
 }
 
 async function getDotsForNote(note: TFile | null): Promise<IDot[]> {
