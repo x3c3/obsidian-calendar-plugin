@@ -1,14 +1,14 @@
-import { App, Modal } from "obsidian";
+import { type App, Modal } from "obsidian";
 
 interface IConfirmationDialogParams {
   cta: string;
-  // eslint-disable-next-line
+  // biome-ignore lint/suspicious/noExplicitAny: generic callback signature
   onAccept: (...args: any[]) => Promise<void>;
   text: string;
   title: string;
 }
 
-export class ConfirmationModal extends Modal {
+class ConfirmationModal extends Modal {
   constructor(app: App, config: IConfirmationDialogParams) {
     super(app);
 

@@ -2,48 +2,51 @@
 
 <script lang="ts">
   import type { Moment } from "moment";
-  import {
-    Calendar as CalendarBase,
-    ICalendarSource,
-    configureGlobalMomentLocale,
-  } from "obsidian-calendar-ui";
+  import type { Plugin } from "obsidian";
   import { onDestroy } from "svelte";
 
+  import { Calendar as CalendarBase, configureGlobalMomentLocale } from "src/components";
+  import type { ICalendarSource, IEventHandlers, ISourceSettings } from "src/components";
   import type { ISettings } from "src/settings";
-  import { activeFile, dailyNotes, settings, weeklyNotes } from "./stores";
+  import { activeFile, settings } from "./stores";
 
-  let today: Moment;
+  let today: Moment = window.moment();
 
   $: today = getToday($settings);
 
   export let displayedMonth: Moment = today;
   export let sources: ICalendarSource[];
-  export let onHoverDay: (date: Moment, targetEl: EventTarget) => boolean;
-  export let onHoverWeek: (date: Moment, targetEl: EventTarget) => boolean;
-  export let onClickDay: (date: Moment, isMetaPressed: boolean) => boolean;
-  export let onClickWeek: (date: Moment, isMetaPressed: boolean) => boolean;
-  export let onContextMenuDay: (date: Moment, event: MouseEvent) => boolean;
-  export let onContextMenuWeek: (date: Moment, event: MouseEvent) => boolean;
+  export let plugin: Plugin;
+  export let onHover: IEventHandlers["onHover"];
+  export let onClick: IEventHandlers["onClick"];
+  export let onContextMenu: IEventHandlers["onContextMenu"];
 
   export function tick() {
     today = window.moment();
   }
 
+  export function setDisplayedMonth(date: Moment) {
+    displayedMonth = date;
+  }
+
   function getToday(settings: ISettings) {
     configureGlobalMomentLocale(settings.localeOverride, settings.weekStart);
-    dailyNotes.reindex();
-    weeklyNotes.reindex();
     return window.moment();
   }
 
-  // 1 minute heartbeat to keep `today` reflecting the current day
+  function getSourceSettings(_sourceId: string): ISourceSettings {
+    return {
+      color: "default",
+      display: "calendar-and-menu",
+      order: 0,
+    };
+  }
+
   let heartbeat = setInterval(() => {
     tick();
 
     const isViewingCurrentMonth = displayedMonth.isSame(today, "day");
     if (isViewingCurrentMonth) {
-      // if it's midnight on the last day of the month, this will
-      // update the display to show the new month.
       displayedMonth = today;
     }
   }, 1000 * 60);
@@ -56,12 +59,9 @@
 <CalendarBase
   {sources}
   {today}
-  {onHoverDay}
-  {onHoverWeek}
-  {onContextMenuDay}
-  {onContextMenuWeek}
-  {onClickDay}
-  {onClickWeek}
+  {plugin}
+  eventHandlers={{ onHover, onClick, onContextMenu }}
+  getSourceSettings={getSourceSettings}
   bind:displayedMonth
   localeData={today.localeData()}
   selectedId={$activeFile}

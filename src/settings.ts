@@ -1,10 +1,12 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
-import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
-import type { ILocaleOverride, IWeekStartOption } from "obsidian-calendar-ui";
-
+import { type App, PluginSettingTab, Setting } from "obsidian";
+import {
+  type ILocaleOverride,
+  type IWeekStartOption,
+  weekdays,
+} from "src/components";
 import { DEFAULT_WEEK_FORMAT, DEFAULT_WORDS_PER_DOT } from "src/constants";
-
 import type CalendarPlugin from "./main";
+import { appHasDailyNotesPluginLoaded } from "./periodic-notes";
 
 export interface ISettings {
   wordsPerDot: number;
@@ -20,20 +22,9 @@ export interface ISettings {
   localeOverride: ILocaleOverride;
 }
 
-const weekdays = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-];
-
 export const defaultSettings = Object.freeze({
   shouldConfirmBeforeCreate: true,
   weekStart: "locale" as IWeekStartOption,
-
   wordsPerDot: DEFAULT_WORDS_PER_DOT,
 
   showWeeklyNote: false,
@@ -45,9 +36,9 @@ export const defaultSettings = Object.freeze({
 });
 
 export function appHasPeriodicNotesPluginLoaded(): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
   const periodicNotes = (<any>window.app).plugins.getPlugin("periodic-notes");
-  return periodicNotes && periodicNotes.settings?.weekly?.enabled;
+  return periodicNotes?.settings?.weekly?.enabled;
 }
 
 export class CalendarSettingsTab extends PluginSettingTab {
@@ -68,8 +59,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         });
         banner.createEl("p", {
           cls: "setting-item-description",
-          text:
-            "The calendar is best used in conjunction with either the Daily Notes plugin or the Periodic Notes plugin (available in the Community Plugins catalog).",
+          text: "The calendar is best used in conjunction with either the Daily Notes plugin or the Periodic Notes plugin (available in the Community Plugins catalog).",
         });
       });
     }
@@ -91,8 +81,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
       this.containerEl.createEl("p", {
         cls: "setting-item-description",
-        text:
-          "Note: Weekly Note settings are moving. You are encouraged to install the 'Periodic Notes' plugin to keep the functionality in the future.",
+        text: "Note: Weekly Note settings are moving. You are encouraged to install the 'Periodic Notes' plugin to keep the functionality in the future.",
       });
       this.addWeeklyNoteFormatSetting();
       this.addWeeklyNoteTemplateSetting();
@@ -131,7 +120,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Start week on:")
       .setDesc(
-        "Choose what day of the week to start. Select 'Locale default' to use the default specified by moment.js"
+        "Choose what day of the week to start. Select 'Locale default' to use the default specified by moment.js",
       )
       .addDropdown((dropdown) => {
         dropdown.addOption("locale", `Locale default (${localeWeekStart})`);
@@ -191,7 +180,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Weekly note template")
       .setDesc(
-        "Choose the file you want to use as the template for your weekly notes"
+        "Choose the file you want to use as the template for your weekly notes",
       )
       .addText((textfield) => {
         textfield.setValue(this.plugin.options.weeklyNoteTemplate);
@@ -221,7 +210,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Override locale:")
       .setDesc(
-        "Set this if you want to use a locale different from the default"
+        "Set this if you want to use a locale different from the default",
       )
       .addDropdown((dropdown) => {
         dropdown.addOption("system-default", `Same as system (${sysLocale})`);

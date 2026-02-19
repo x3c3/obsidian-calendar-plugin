@@ -1,15 +1,14 @@
-import { App, Menu, Point, TFile } from "obsidian";
+import { type App, Menu, type Point, type TFile } from "obsidian";
 
 export function showFileMenu(app: App, file: TFile, position: Point): void {
-  const fileMenu = new Menu(app);
+  const fileMenu = new Menu();
   fileMenu.addItem((item) =>
     item
       .setTitle("Delete")
       .setIcon("trash")
       .onClick(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>app).fileManager.promptForFileDeletion(file);
-      })
+        app.vault.trash(file, true);
+      }),
   );
 
   app.workspace.trigger(
@@ -17,7 +16,7 @@ export function showFileMenu(app: App, file: TFile, position: Point): void {
     fileMenu,
     file,
     "calendar-context-menu",
-    null
+    null,
   );
   fileMenu.showAtPosition(position);
 }

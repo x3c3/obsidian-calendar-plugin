@@ -1,43 +1,35 @@
-import type { Moment, WeekSpec } from "moment";
-import { App, Plugin, WorkspaceLeaf } from "obsidian";
+import { Plugin, type WorkspaceLeaf } from "obsidian";
 
 import { VIEW_TYPE_CALENDAR } from "./constants";
-import { settings } from "./ui/stores";
+import { tryToCreateWeeklyNote } from "./io/notes";
 import {
   appHasPeriodicNotesPluginLoaded,
   CalendarSettingsTab,
-  ISettings,
+  type ISettings,
 } from "./settings";
+import { settings } from "./ui/stores";
 import CalendarView from "./view";
 
-declare global {
-  interface Window {
-    app: App;
-    moment: () => Moment;
-    _bundledLocaleWeekSpec: WeekSpec;
-  }
-}
-
 export default class CalendarPlugin extends Plugin {
-  public options: ISettings;
-  private view: CalendarView;
+  public options!: ISettings;
+  private view!: CalendarView;
 
   onunload(): void {
-    this.app.workspace
-      .getLeavesOfType(VIEW_TYPE_CALENDAR)
-      .forEach((leaf) => leaf.detach());
+    this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR).forEach((leaf) => {
+      leaf.detach();
+    });
   }
 
   async onload(): Promise<void> {
     this.register(
       settings.subscribe((value) => {
         this.options = value;
-      })
+      }),
     );
 
     this.registerView(
       VIEW_TYPE_CALENDAR,
-      (leaf: WorkspaceLeaf) => (this.view = new CalendarView(leaf))
+      (leaf: WorkspaceLeaf) => (this.view = new CalendarView(leaf)),
     );
 
     this.addCommand({
@@ -60,7 +52,7 @@ export default class CalendarPlugin extends Plugin {
         if (checking) {
           return !appHasPeriodicNotesPluginLoaded();
         }
-        this.view.openOrCreateWeeklyNote(window.moment(), false);
+        tryToCreateWeeklyNote(window.moment(), false, this.options);
       },
     });
 
@@ -78,7 +70,7 @@ export default class CalendarPlugin extends Plugin {
       this.initLeaf();
     } else {
       this.registerEvent(
-        this.app.workspace.on("layout-ready", this.initLeaf.bind(this))
+        this.app.workspace.on("layout-ready", this.initLeaf.bind(this)),
       );
     }
   }
@@ -87,7 +79,7 @@ export default class CalendarPlugin extends Plugin {
     if (this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR).length) {
       return;
     }
-    this.app.workspace.getRightLeaf(false).setViewState({
+    this.app.workspace.getRightLeaf(false)?.setViewState({
       type: VIEW_TYPE_CALENDAR,
     });
   }
@@ -105,7 +97,7 @@ export default class CalendarPlugin extends Plugin {
   }
 
   async writeOptions(
-    changeOpts: (settings: ISettings) => Partial<ISettings>
+    changeOpts: (settings: ISettings) => Partial<ISettings>,
   ): Promise<void> {
     settings.update((old) => ({ ...old, ...changeOpts(old) }));
     await this.saveData(this.options);

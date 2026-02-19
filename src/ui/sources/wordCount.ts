@@ -1,17 +1,14 @@
-import type { Moment } from "moment";
 import type { TFile } from "obsidian";
-import type { ICalendarSource, IDayMetadata, IDot } from "obsidian-calendar-ui";
-import { getDailyNote, getWeeklyNote } from "obsidian-daily-notes-interface";
+import type { ICalendarSource, IDot, IEvaluatedMetadata } from "src/components";
+import { DEFAULT_WORDS_PER_DOT } from "src/constants";
 import { get } from "svelte/store";
 
-import { DEFAULT_WORDS_PER_DOT } from "src/constants";
-
-import { dailyNotes, settings, weeklyNotes } from "../stores";
+import { settings } from "../stores";
 import { clamp, getWordCount } from "../utils";
 
 const NUM_MAX_DOTS = 5;
 
-export async function getWordLengthAsDots(note: TFile): Promise<number> {
+async function getWordLengthAsDots(note: TFile): Promise<number> {
   const { wordsPerDot = DEFAULT_WORDS_PER_DOT } = get(settings);
   if (!note || wordsPerDot <= 0) {
     return 0;
@@ -23,15 +20,13 @@ export async function getWordLengthAsDots(note: TFile): Promise<number> {
   return clamp(Math.floor(numDots), 1, NUM_MAX_DOTS);
 }
 
-export async function getDotsForDailyNote(
-  dailyNote: TFile | null
-): Promise<IDot[]> {
-  if (!dailyNote) {
+async function getDotsForNote(note: TFile | null): Promise<IDot[]> {
+  if (!note) {
     return [];
   }
-  const numSolidDots = await getWordLengthAsDots(dailyNote);
+  const numSolidDots = await getWordLengthAsDots(note);
 
-  const dots = [];
+  const dots: IDot[] = [];
   for (let i = 0; i < numSolidDots; i++) {
     dots.push({
       color: "default",
@@ -42,20 +37,15 @@ export async function getDotsForDailyNote(
 }
 
 export const wordCountSource: ICalendarSource = {
-  getDailyMetadata: async (date: Moment): Promise<IDayMetadata> => {
-    const file = getDailyNote(date, get(dailyNotes));
-    const dots = await getDotsForDailyNote(file);
-    return {
-      dots,
-    };
-  },
-
-  getWeeklyMetadata: async (date: Moment): Promise<IDayMetadata> => {
-    const file = getWeeklyNote(date, get(weeklyNotes));
-    const dots = await getDotsForDailyNote(file);
-
-    return {
-      dots,
-    };
-  },
+  id: "word-count",
+  name: "Word Count",
+  defaultSettings: {},
+  getMetadata: async (
+    _granularity,
+    _date,
+    file: TFile | null,
+  ): Promise<IEvaluatedMetadata> => ({
+    value: 0,
+    dots: await getDotsForNote(file),
+  }),
 };
