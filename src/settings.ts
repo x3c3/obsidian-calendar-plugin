@@ -1,10 +1,10 @@
 import { type App, PluginSettingTab, Setting } from "obsidian";
+import { DEFAULT_WEEK_FORMAT, DEFAULT_WORDS_PER_DOT } from "src/constants";
 import {
   type ILocaleOverride,
   type IWeekStartOption,
   weekdays,
-} from "src/components";
-import { DEFAULT_WEEK_FORMAT, DEFAULT_WORDS_PER_DOT } from "src/constants";
+} from "./components/localization";
 import type CalendarPlugin from "./main";
 import { appHasDailyNotesPluginLoaded } from "./periodic-notes";
 

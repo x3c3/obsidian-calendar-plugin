@@ -10,15 +10,15 @@ import { TRIGGER_ON_OPEN, VIEW_TYPE_CALENDAR } from "src/constants";
 import { tryToCreateDailyNote, tryToCreateWeeklyNote } from "src/io/notes";
 import type { ISettings } from "src/settings";
 import { mount, unmount } from "svelte";
+import Calendar from "./components/Calendar.svelte";
+import { showFileMenu } from "./fileMenu";
 import {
   getDateFromFile,
   getWeeklyNoteSettings,
   type IGranularity,
 } from "./periodic-notes";
-import Calendar from "./ui/Calendar.svelte";
-import { showFileMenu } from "./ui/fileMenu";
-import { wordCountSource } from "./ui/sources";
-import { activeFile, settings } from "./ui/stores";
+import { wordCountSource } from "./sources";
+import { activeFile, settings } from "./stores";
 
 interface CalendarExports {
   tick: () => void;

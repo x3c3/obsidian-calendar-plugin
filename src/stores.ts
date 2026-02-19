@@ -1,8 +1,7 @@
 import type { TFile } from "obsidian";
-import { getDateUIDFromFile } from "src/components";
-
 import { defaultSettings, type ISettings } from "src/settings";
 import { writable } from "svelte/store";
+import { getDateUIDFromFile } from "./components/fileStore";
 
 export const settings = writable<ISettings>(defaultSettings);
 

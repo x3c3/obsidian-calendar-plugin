@@ -7,7 +7,7 @@ import {
   CalendarSettingsTab,
   type ISettings,
 } from "./settings";
-import { settings } from "./ui/stores";
+import { settings } from "./stores";
 import CalendarView from "./view";
 
 export default class CalendarPlugin extends Plugin {

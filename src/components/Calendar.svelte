@@ -1,43 +1,83 @@
 <svelte:options immutable />
 
 <script lang="ts">
+  import type { Moment } from "moment";
   import { Plugin } from "obsidian";
-  import type { Locale, Moment } from "moment";
-  import { setContext } from "svelte";
-  import { writable } from "svelte/store";
+  import { onDestroy, setContext } from "svelte";
+  import { get, writable } from "svelte/store";
 
+  import type { ISettings } from "src/settings";
+  import { activeFile, settings } from "../stores";
   import { DISPLAYED_MONTH, IS_MOBILE } from "./context";
   import Day from "./Day.svelte";
+  import PeriodicNotesCache from "./fileStore";
+  import { configureGlobalMomentLocale } from "./localization";
   import Nav from "./Nav.svelte";
-  import WeekNum from "./WeekNum.svelte";
   import type { ICalendarSource, IEventHandlers, IMonth, ISourceSettings } from "./types";
   import { getDaysOfWeek, getMonth, isWeekend } from "./utils";
-  import PeriodicNotesCache from "./fileStore";
+  import WeekNum from "./WeekNum.svelte";
 
-  export let localeData: Locale;
-  export let showWeekNums: boolean = false;
-  export let eventHandlers: IEventHandlers;
-
-  // External sources (All optional)
+  // Props from view.ts
   export let plugin: Plugin;
   export let sources: ICalendarSource[] = [];
-  export let getSourceSettings: (sourceId: string) => ISourceSettings;
-  export let selectedId: string | null;
+  export let onHover: IEventHandlers["onHover"];
+  export let onClick: IEventHandlers["onClick"];
+  export let onContextMenu: IEventHandlers["onContextMenu"];
 
-  // Override-able local state
-  export let today: Moment = window.moment();
-  export let displayedMonth: Moment = today;
+  // Internal state derived from stores
+  let today: Moment = window.moment();
+  $: today = getToday($settings);
+  $: showWeekNums = $settings.showWeeklyNote;
+  $: selectedId = $activeFile;
 
+  // Public API for view.ts
+  export function tick() {
+    today = window.moment();
+  }
+
+  export function setDisplayedMonth(date: Moment) {
+    displayedMonthStore.set(date);
+  }
+
+  function getToday(s: ISettings) {
+    configureGlobalMomentLocale(s.localeOverride, s.weekStart);
+    return window.moment();
+  }
+
+  function getSourceSettings(_sourceId: string): ISourceSettings {
+    return {
+      color: "default",
+      display: "calendar-and-menu",
+      order: 0,
+    };
+  }
+
+  // Heartbeat: update today every 60s, sync displayed month if viewing current
+  let heartbeat = setInterval(() => {
+    tick();
+    if (get(displayedMonthStore).isSame(today, "day")) {
+      displayedMonthStore.set(today);
+    }
+  }, 1000 * 60);
+
+  onDestroy(() => {
+    clearInterval(heartbeat);
+  });
+
+  // Context
+  // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
   setContext(IS_MOBILE, (plugin.app as any).isMobile);
 
-  let displayedMonthStore = writable<Moment>(displayedMonth);
+  let displayedMonthStore = writable<Moment>(today);
   setContext(DISPLAYED_MONTH, displayedMonthStore);
+
+  $: eventHandlers = { onHover, onClick, onContextMenu };
 
   let month: IMonth;
   let daysOfWeek: string[];
 
-  $: { localeData; month = getMonth($displayedMonthStore); }
-  $: { localeData; daysOfWeek = getDaysOfWeek(); }
+  $: { today; month = getMonth($displayedMonthStore); }
+  $: { today; daysOfWeek = getDaysOfWeek(); }
 
   const fileCache = new PeriodicNotesCache(plugin, sources);
 </script>

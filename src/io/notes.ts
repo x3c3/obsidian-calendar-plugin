@@ -1,7 +1,7 @@
 import type { Moment } from "moment";
 import type { TFile } from "obsidian";
+import { createConfirmationDialog } from "src/modal";
 import type { ISettings } from "src/settings";
-import { createConfirmationDialog } from "src/ui/modal";
 import {
   createDailyNote,
   createWeeklyNote,
