@@ -8,7 +8,7 @@
 
   import type { ISettings } from "src/settings";
   import { activeFile, settings } from "../stores";
-  import { DISPLAYED_MONTH, IS_MOBILE } from "./context";
+  import { DISPLAYED_MONTH } from "./context";
   import Day from "./Day.svelte";
   import PeriodicNotesCache from "./fileStore";
   import { configureGlobalMomentLocale } from "./localization";
@@ -63,10 +63,6 @@
   onDestroy(() => {
     clearInterval(heartbeat);
   });
-
-  // Context
-  // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
-  setContext(IS_MOBILE, (plugin.app as any).isMobile);
 
   let displayedMonthStore = writable<Moment>(today);
   setContext(DISPLAYED_MONTH, displayedMonthStore);

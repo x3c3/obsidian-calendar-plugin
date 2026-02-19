@@ -5,7 +5,7 @@ export {
   getDailyNoteSettings,
   getWeeklyNoteSettings,
 } from "./settings";
-export type { IGranularity, IPeriodicNoteSettings } from "./types";
+export type { IGranularity } from "./types";
 export {
   createDailyNote,
   createWeeklyNote,

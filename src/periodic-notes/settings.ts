@@ -1,11 +1,10 @@
 import type { IPeriodicNoteSettings } from "./types";
-import {
-  DEFAULT_DAILY_NOTE_FORMAT,
-  DEFAULT_MONTHLY_NOTE_FORMAT,
-  DEFAULT_QUARTERLY_NOTE_FORMAT,
-  DEFAULT_WEEKLY_NOTE_FORMAT,
-  DEFAULT_YEARLY_NOTE_FORMAT,
-} from "./types";
+
+const DEFAULT_DAILY_NOTE_FORMAT = "YYYY-MM-DD";
+const DEFAULT_WEEKLY_NOTE_FORMAT = "gggg-[W]ww";
+const DEFAULT_MONTHLY_NOTE_FORMAT = "YYYY-MM";
+const DEFAULT_QUARTERLY_NOTE_FORMAT = "YYYY-[Q]Q";
+const DEFAULT_YEARLY_NOTE_FORMAT = "YYYY";
 
 function shouldUsePeriodicNotesSettings(periodicity: string): boolean {
   const periodicNotes = window.app.plugins.getPlugin("periodic-notes");
