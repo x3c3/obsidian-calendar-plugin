@@ -1,19 +1,24 @@
-<svelte:options immutable />
-
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { IDayMetadata } from "./types";
 
-  export let metadata: Promise<IDayMetadata[]> | null;
+  let {
+    metadata,
+    children,
+  }: {
+    metadata: Promise<IDayMetadata[]> | null;
+    children: Snippet<[IDayMetadata[] | null]>;
+  } = $props();
 </script>
 
 {#if metadata}
   {#await metadata}
-    <slot metadata="{null}" />
+    {@render children(null)}
   {:then resolvedMeta}
-    <slot metadata="{resolvedMeta}" />
+    {@render children(resolvedMeta)}
   {:catch}
-    <slot metadata="{null}" />
+    {@render children(null)}
   {/await}
 {:else}
-  <slot metadata="{null}" />
+  {@render children(null)}
 {/if}

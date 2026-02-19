@@ -10,10 +10,17 @@
   import Month from "./Month.svelte";
   import type { IEventHandlers, ISourceSettings } from "./types";
 
-  export let getSourceSettings: (sourceId: string) => ISourceSettings;
-  export let fileCache: PeriodicNotesCache;
-  export let today: Moment;
-  export let eventHandlers: IEventHandlers;
+  let {
+    getSourceSettings,
+    fileCache,
+    today,
+    eventHandlers,
+  }: {
+    getSourceSettings: (sourceId: string) => ISourceSettings;
+    fileCache: PeriodicNotesCache;
+    today: Moment;
+    eventHandlers: IEventHandlers;
+  } = $props();
 
   let displayedMonth = getContext<Writable<Moment>>(DISPLAYED_MONTH);
 
@@ -29,35 +36,34 @@
     displayedMonth.set(today.clone());
   }
 
-  let showingCurrentMonth: boolean;
-  $: showingCurrentMonth = $displayedMonth.isSame(today, "month");
+  let showingCurrentMonth = $derived($displayedMonth.isSame(today, "month"));
 </script>
 
 <div class="nav">
   <Month
-    fileCache="{fileCache}"
-    getSourceSettings="{getSourceSettings}"
-    resetDisplayedMonth="{resetDisplayedMonth}"
+    {fileCache}
+    {getSourceSettings}
+    {resetDisplayedMonth}
     {...eventHandlers}
   />
   <div class="right-nav">
     <Arrow
       direction="left"
-      onClick="{decrementDisplayedMonth}"
+      onClick={decrementDisplayedMonth}
       tooltip="Previous Month"
     />
     <button
       type="button"
-      aria-label="{!showingCurrentMonth ? 'Reset to current month' : null}"
+      aria-label={!showingCurrentMonth ? 'Reset to current month' : null}
       class="reset-button"
-      class:active="{!showingCurrentMonth}"
-      on:click="{resetDisplayedMonth}"
+      class:active={!showingCurrentMonth}
+      onclick={resetDisplayedMonth}
     >
       <Dot isFilled />
     </button>
     <Arrow
       direction="right"
-      onClick="{incrementDisplayedMonth}"
+      onClick={incrementDisplayedMonth}
       tooltip="Next Month"
     />
   </div>

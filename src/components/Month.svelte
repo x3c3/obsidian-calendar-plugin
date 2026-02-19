@@ -15,39 +15,48 @@
   import { isMetaPressed } from "./utils";
   import type { IDayMetadata, ISourceSettings } from "./types";
 
-  export let fileCache: PeriodicNotesCache;
-  export let getSourceSettings: (sourceId: string) => ISourceSettings;
-  export let onHover: (
-    periodicity: IGranularity,
-    date: Moment,
-    file: TFile | null,
-    targetEl: EventTarget,
-    isMetaPressed: boolean
-  ) => void;
-  export let onClick: (
-    granularity: IGranularity,
-    date: Moment,
-    existingFile: TFile | null,
-    inNewSplit: boolean
-  ) => void;
-  export let onContextMenu: (
-    granularity: IGranularity,
-    date: Moment,
-    file: TFile | null,
-    event: MouseEvent
-  ) => void;
-  export let resetDisplayedMonth: () => void;
+  let {
+    fileCache,
+    getSourceSettings,
+    onHover,
+    onClick,
+    onContextMenu,
+    resetDisplayedMonth,
+  }: {
+    fileCache: PeriodicNotesCache;
+    getSourceSettings: (sourceId: string) => ISourceSettings;
+    onHover: (
+      periodicity: IGranularity,
+      date: Moment,
+      file: TFile | null,
+      targetEl: EventTarget,
+      isMetaPressed: boolean,
+    ) => void;
+    onClick: (
+      granularity: IGranularity,
+      date: Moment,
+      existingFile: TFile | null,
+      inNewSplit: boolean,
+    ) => void;
+    onContextMenu: (
+      granularity: IGranularity,
+      date: Moment,
+      file: TFile | null,
+      event: MouseEvent,
+    ) => void;
+    resetDisplayedMonth: () => void;
+  } = $props();
 
   let displayedMonth = getContext<Writable<Moment>>(DISPLAYED_MONTH);
-  let metadata: Promise<IDayMetadata[]> | null;
+  let metadata: Promise<IDayMetadata[]> | null = $state(null);
 
-  let file: TFile | null;
+  let file: TFile | null = $state(null);
   function getMetadata() {
     file = fileCache.getFile($displayedMonth, "month");
     metadata = fileCache.getEvaluatedMetadata(
       "month",
       $displayedMonth,
-      getSourceSettings
+      getSourceSettings,
     );
   }
   const unsubFileCache = fileCache.store.subscribe(getMetadata);
@@ -77,39 +86,41 @@
   }
 </script>
 
-<MetadataResolver metadata="{metadata}" let:metadata>
-  <div
-    role="button"
-    tabindex="0"
-    draggable="{true}"
-    on:click="{handleClick}"
-    on:keydown="{(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        if (appHasMonthlyNotesPluginLoaded()) {
-          onClick?.('month', $displayedMonth, file, false);
-        } else {
-          resetDisplayedMonth();
+<MetadataResolver {metadata}>
+  {#snippet children(metadata)}
+    <div
+      role="button"
+      tabindex="0"
+      draggable={true}
+      onclick={handleClick}
+      onkeydown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (appHasMonthlyNotesPluginLoaded()) {
+            onClick?.('month', $displayedMonth, file, false);
+          } else {
+            resetDisplayedMonth();
+          }
         }
-      }
-    }}"
-    on:contextmenu="{metadata &&
-      onContextMenu &&
-      ((e) => onContextMenu('month', $displayedMonth, file, e))}"
-    on:dragstart="{file ? (event) => fileCache.onDragStart(event, file!) : undefined}"
-    on:pointerenter="{handleHover}"
-  >
-    <span class="title">
-      <span class="month">
-        {$displayedMonth.format("MMM")}
+      }}
+      oncontextmenu={metadata &&
+        onContextMenu &&
+        ((e) => onContextMenu('month', $displayedMonth, file, e))}
+      ondragstart={file ? (event) => fileCache.onDragStart(event, file!) : undefined}
+      onpointerenter={handleHover}
+    >
+      <span class="title">
+        <span class="month">
+          {$displayedMonth.format("MMM")}
+        </span>
+        <span class="year">
+          {$displayedMonth.format("YYYY")}
+        </span>
       </span>
-      <span class="year">
-        {$displayedMonth.format("YYYY")}
-      </span>
-    </span>
-    {#if metadata}
-      <Dots metadata="{metadata}" centered="{false}" />
-    {/if}
-  </div>
+      {#if metadata}
+        <Dots {metadata} centered={false} />
+      {/if}
+    </div>
+  {/snippet}
 </MetadataResolver>
 
 <style>

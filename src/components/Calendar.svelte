@@ -1,5 +1,3 @@
-<svelte:options immutable />
-
 <script lang="ts">
   import type { Moment } from "moment";
   import { Plugin } from "obsidian";
@@ -18,17 +16,41 @@
   import WeekNum from "./WeekNum.svelte";
 
   // Props from view.ts
-  export let plugin: Plugin;
-  export let sources: ICalendarSource[] = [];
-  export let onHover: IEventHandlers["onHover"];
-  export let onClick: IEventHandlers["onClick"];
-  export let onContextMenu: IEventHandlers["onContextMenu"];
+  let {
+    plugin,
+    sources = [],
+    onHover,
+    onClick,
+    onContextMenu,
+  }: {
+    plugin: Plugin;
+    sources?: ICalendarSource[];
+    onHover: IEventHandlers["onHover"];
+    onClick: IEventHandlers["onClick"];
+    onContextMenu: IEventHandlers["onContextMenu"];
+  } = $props();
 
-  // Internal state derived from stores
-  let today: Moment = window.moment();
-  $: today = getToday($settings);
-  $: showWeekNums = $settings.showWeeklyNote;
-  $: selectedId = $activeFile;
+  // Internal state — today is both derived from settings (locale change) and
+  // imperatively mutated by tick(), so it needs $state.raw + $effect.
+  let today: Moment = $state.raw(window.moment());
+
+  $effect(() => {
+    today = getToday($settings);
+  });
+
+  let showWeekNums = $derived($settings.showWeeklyNote);
+  let selectedId = $derived($activeFile);
+  let eventHandlers: IEventHandlers = $derived({ onHover, onClick, onContextMenu });
+
+  let month: IMonth = $derived.by(() => {
+    today;
+    return getMonth($displayedMonthStore);
+  });
+
+  let daysOfWeek: string[] = $derived.by(() => {
+    today;
+    return getDaysOfWeek();
+  });
 
   // Public API for view.ts
   export function tick() {
@@ -67,23 +89,15 @@
   let displayedMonthStore = writable<Moment>(today);
   setContext(DISPLAYED_MONTH, displayedMonthStore);
 
-  $: eventHandlers = { onHover, onClick, onContextMenu };
-
-  let month: IMonth;
-  let daysOfWeek: string[];
-
-  $: { today; month = getMonth($displayedMonthStore); }
-  $: { today; daysOfWeek = getDaysOfWeek(); }
-
   const fileCache = new PeriodicNotesCache(plugin, sources);
 </script>
 
 <div id="calendar-container" class="container">
   <Nav
-    fileCache="{fileCache}"
-    today="{today}"
-    getSourceSettings="{getSourceSettings}"
-    eventHandlers="{eventHandlers}"
+    {fileCache}
+    {today}
+    {getSourceSettings}
+    {eventHandlers}
   />
   <table class="calendar">
     <colgroup>
@@ -91,7 +105,7 @@
         <col />
       {/if}
       {#each month[1].days as date}
-        <col class:weekend="{isWeekend(date)}" />
+        <col class:weekend={isWeekend(date)} />
       {/each}
     </colgroup>
     <thead>
@@ -109,20 +123,20 @@
         <tr>
           {#if showWeekNums}
             <WeekNum
-              fileCache="{fileCache}"
-              selectedId="{selectedId}"
-              getSourceSettings="{getSourceSettings}"
+              {fileCache}
+              {selectedId}
+              {getSourceSettings}
               {...week}
               {...eventHandlers}
             />
           {/if}
           {#each week.days as day (day.format())}
             <Day
-              date="{day}"
-              fileCache="{fileCache}"
-              getSourceSettings="{getSourceSettings}"
-              today="{today}"
-              selectedId="{selectedId}"
+              date={day}
+              {fileCache}
+              {getSourceSettings}
+              {today}
+              {selectedId}
               {...eventHandlers}
             />
           {/each}
