@@ -1,0 +1,245 @@
+import type { Moment } from "moment";
+import { Notice, normalizePath, TFile, TFolder, Vault } from "obsidian";
+import { getDateFromFile, getDateUID } from "./parse";
+import {
+  appHasMonthlyNotesPluginLoaded,
+  appHasWeeklyNotesPluginLoaded,
+  getDailyNoteSettings,
+  getMonthlyNoteSettings,
+  getWeeklyNoteSettings,
+} from "./settings";
+import type { IGranularity } from "./types";
+
+function join(...partSegments: string[]): string {
+  let parts: string[] = [];
+  for (let i = 0, l = partSegments.length; i < l; i++) {
+    parts = parts.concat(partSegments[i].split("/"));
+  }
+  const newParts: string[] = [];
+  for (let i = 0, l = parts.length; i < l; i++) {
+    const part = parts[i];
+    if (!part || part === ".") continue;
+    newParts.push(part);
+  }
+  if (parts[0] === "") newParts.unshift("");
+  return newParts.join("/");
+}
+
+async function ensureFolderExists(path: string): Promise<void> {
+  const dirs = path.replace(/\\/g, "/").split("/");
+  dirs.pop();
+  if (dirs.length) {
+    const dir = join(...dirs);
+    if (!window.app.vault.getAbstractFileByPath(dir)) {
+      await window.app.vault.createFolder(dir);
+    }
+  }
+}
+
+async function getNotePath(
+  directory: string,
+  filename: string,
+): Promise<string> {
+  let fname = filename;
+  if (!fname.endsWith(".md")) {
+    fname += ".md";
+  }
+  const path = normalizePath(join(directory, fname));
+  await ensureFolderExists(path);
+  return path;
+}
+
+async function getTemplateInfo(
+  template: string,
+): Promise<[string, Record<string, unknown> | null]> {
+  const { metadataCache, vault } = window.app;
+  const templatePath = normalizePath(template);
+  if (templatePath === "/") {
+    return ["", null];
+  }
+  try {
+    const templateFile = metadataCache.getFirstLinkpathDest(templatePath, "");
+    if (!templateFile) {
+      throw new Error(`Template not found: ${templatePath}`);
+    }
+    const contents = await vault.cachedRead(templateFile);
+    // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
+    const foldInfo = (window.app as any).foldManager.load(templateFile);
+    return [contents, foldInfo];
+  } catch (err) {
+    console.error(
+      `Failed to read the daily note template '${templatePath}'`,
+      err,
+    );
+    new Notice("Failed to read the daily note template");
+    return ["", null];
+  }
+}
+
+export async function createDailyNote(date: Moment): Promise<TFile> {
+  const { vault } = window.app;
+  const { moment } = window;
+  const { template, format, folder } = getDailyNoteSettings();
+  const [templateContents, foldInfo] = await getTemplateInfo(template ?? "");
+  const fmt = format || "YYYY-MM-DD";
+  const filename = date.format(fmt);
+  const normalizedPath = await getNotePath(folder ?? "", filename);
+  try {
+    const createdFile = await vault.create(
+      normalizedPath,
+      templateContents
+        .replace(/{{\s*date\s*}}/gi, filename)
+        .replace(/{{\s*time\s*}}/gi, moment().format("HH:mm"))
+        .replace(/{{\s*title\s*}}/gi, filename)
+        .replace(
+          /{{\s*(date|time)\s*(([+-]\d+)([yqmwdhs]))?\s*(:.+?)?}}/gi,
+          (_, _timeOrDate, calc, timeDelta, unit, momentFormat) => {
+            const now = moment();
+            const currentDate = date.clone().set({
+              hour: now.get("hour"),
+              minute: now.get("minute"),
+              second: now.get("second"),
+            });
+            if (calc) {
+              currentDate.add(parseInt(timeDelta, 10), unit);
+            }
+            if (momentFormat) {
+              return currentDate.format(momentFormat.substring(1).trim());
+            }
+            return currentDate.format(fmt);
+          },
+        )
+        .replace(
+          /{{\s*yesterday\s*}}/gi,
+          date.clone().subtract(1, "day").format(fmt),
+        )
+        .replace(/{{\s*tomorrow\s*}}/gi, date.clone().add(1, "d").format(fmt)),
+    );
+    // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
+    (window.app as any).foldManager.save(createdFile, foldInfo);
+    return createdFile;
+  } catch (err) {
+    console.error(`Failed to create file: '${normalizedPath}'`, err);
+    new Notice("Unable to create new file.");
+    throw err;
+  }
+}
+
+function getDaysOfWeek(): string[] {
+  const { moment } = window;
+  // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
+  let weekStart = (moment.localeData() as any)._week.dow;
+  const daysOfWeek = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  while (weekStart) {
+    // biome-ignore lint/style/noNonNullAssertion: array is guaranteed non-empty
+    daysOfWeek.push(daysOfWeek.shift()!);
+    weekStart--;
+  }
+  return daysOfWeek;
+}
+
+function getDayOfWeekNumericalValue(dayOfWeekName: string): number {
+  return getDaysOfWeek().indexOf(dayOfWeekName.toLowerCase());
+}
+
+export async function createWeeklyNote(date: Moment): Promise<TFile> {
+  const { vault } = window.app;
+  const { template, format, folder } = getWeeklyNoteSettings();
+  const [templateContents, foldInfo] = await getTemplateInfo(template ?? "");
+  const fmt = format || "gggg-[W]ww";
+  const filename = date.format(fmt);
+  const normalizedPath = await getNotePath(folder ?? "", filename);
+  try {
+    const createdFile = await vault.create(
+      normalizedPath,
+      templateContents
+        .replace(
+          /{{\s*(date|time)\s*(([+-]\d+)([yqmwdhs]))?\s*(:.+?)?}}/gi,
+          (_, _timeOrDate, calc, timeDelta, unit, momentFormat) => {
+            const now = window.moment();
+            const currentDate = date.clone().set({
+              hour: now.get("hour"),
+              minute: now.get("minute"),
+              second: now.get("second"),
+            });
+            if (calc) {
+              currentDate.add(parseInt(timeDelta, 10), unit);
+            }
+            if (momentFormat) {
+              return currentDate.format(momentFormat.substring(1).trim());
+            }
+            return currentDate.format(fmt);
+          },
+        )
+        .replace(/{{\s*title\s*}}/gi, filename)
+        .replace(/{{\s*time\s*}}/gi, window.moment().format("HH:mm"))
+        .replace(
+          /{{\s*(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s*:(.*?)}}/gi,
+          (_, dayOfWeek, momentFormat) => {
+            const day = getDayOfWeekNumericalValue(dayOfWeek);
+            return date.weekday(day).format(momentFormat.trim());
+          },
+        ),
+    );
+    // biome-ignore lint/suspicious/noExplicitAny: Obsidian API lacks type
+    (window.app as any).foldManager.save(createdFile, foldInfo);
+    return createdFile;
+  } catch (err) {
+    console.error(`Failed to create file: '${normalizedPath}'`, err);
+    new Notice("Unable to create new file.");
+    throw err;
+  }
+}
+
+function collectNotes(
+  folder: string,
+  granularity: IGranularity,
+): Record<string, TFile> {
+  const { vault } = window.app;
+  const normalizedPath = normalizePath(folder);
+  const notesFolder = normalizedPath
+    ? vault.getAbstractFileByPath(normalizedPath)
+    : vault.getRoot();
+  if (!(notesFolder instanceof TFolder)) {
+    return {};
+  }
+  const notes: Record<string, TFile> = {};
+  Vault.recurseChildren(notesFolder, (note) => {
+    if (note instanceof TFile) {
+      const date = getDateFromFile(note, granularity);
+      if (date) {
+        notes[getDateUID(date, granularity)] = note;
+      }
+    }
+  });
+  return notes;
+}
+
+export function getAllDailyNotes(): Record<string, TFile> {
+  const { folder } = getDailyNoteSettings();
+  return collectNotes(folder ?? "", "day");
+}
+
+export function getAllWeeklyNotes(): Record<string, TFile> {
+  if (!appHasWeeklyNotesPluginLoaded()) {
+    return {};
+  }
+  const { folder } = getWeeklyNoteSettings();
+  return collectNotes(folder ?? "", "week");
+}
+
+export function getAllMonthlyNotes(): Record<string, TFile> {
+  if (!appHasMonthlyNotesPluginLoaded()) {
+    return {};
+  }
+  const { folder } = getMonthlyNoteSettings();
+  return collectNotes(folder ?? "", "month");
+}
