@@ -1,0 +1,9 @@
+_extends: .github
+
+repository:
+  name: obsidian-calendar
+  description: "Calendar view for navigating and creating daily, weekly, and monthly notes in Obsidian"
+  homepage: https://philoserf.github.io/obsidian-calendar/
+  topics:
+    - calendar
+    - obsidian-plugin
